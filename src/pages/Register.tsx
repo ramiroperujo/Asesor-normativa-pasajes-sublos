@@ -4,21 +4,9 @@ import { supabase } from '@/lib/supabase';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Plane, ArrowLeft } from 'lucide-react';
 import { EstadoCivil } from '@/types';
@@ -55,48 +43,37 @@ export default function Register() {
       return;
     }
 
-    if (!formData.legajo.match(/^[A-Z]{2}\d{5}$/)) {
-      setError(
-        'El formato del legajo debe ser: 2 letras mayúsculas seguidas de 5 números (ej: AR12345)'
-      );
-      return;
-    }
-
     setLoading(true);
 
     try {
       // 1️⃣ Crear usuario en Supabase Auth
-      const { data: authData, error: authError } =
-        await supabase.auth.signUp({
-          email: formData.email,
-          password: formData.password,
-        });
+      const { data, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+      });
 
-      if (authError || !authData.user) {
-        throw new Error(authError?.message || 'Error al crear el usuario');
+      if (authError || !data.user) {
+        throw authError;
       }
 
-      // 2️⃣ Guardar datos extendidos en tabla profiles
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          legajo: formData.legajo,
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          email: formData.email,
-          fecha_ingreso: formData.fechaIngreso,
-          estado_civil: formData.estadoCivil,
-          es_jerarquico: formData.esJerarquico,
-          es_jubilado: formData.esJubilado,
-          en_licencia: false,
-        });
+      // 2️⃣ Crear perfil en tabla profiles
+      const { error: profileError } = await supabase.from('profiles').insert({
+        id: data.user.id,
+        legajo: formData.legajo,
+        nombre: formData.nombre,
+        apellido: formData.apellido,
+        email: formData.email,
+        fecha_ingreso: formData.fechaIngreso,
+        estado_civil: formData.estadoCivil,
+        es_jerarquico: formData.esJerarquico,
+        es_jubilado: formData.esJubilado,
+        en_licencia: false,
+      });
 
       if (profileError) {
-        throw new Error('Error al guardar el perfil del usuario');
+        throw profileError;
       }
 
-      // 3️⃣ Redirigir
       navigate('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Error al registrar el usuario');
@@ -105,7 +82,7 @@ export default function Register() {
     }
   };
 
-  const estadoCivilOptions: { value: EstadoCivil; label: string }[] = [
+  const estadoCivilOptions = [
     { value: 'soltero', label: 'Soltero/a' },
     { value: 'casado', label: 'Casado/a' },
     { value: 'union_hecho', label: 'Unión de Hecho' },
@@ -116,58 +93,57 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-blue-100 p-4">
-      <Card className="w-full max-w-2xl shadow-lg">
-        <CardHeader className="space-y-4">
-          <Button
-            variant="ghost"
-            className="w-fit -ml-2"
-            onClick={() => navigate('/login')}
-          >
+      <Card className="w-full max-w-2xl">
+        <CardHeader>
+          <Button variant="ghost" onClick={() => navigate('/login')}>
             <ArrowLeft className="w-4 h-4 mr-2" />
-            Volver al inicio de sesión
+            Volver
           </Button>
-
           <div className="text-center">
-            <div className="flex justify-center mb-4">
-              <div className="w-16 h-16 bg-[#0066CC] rounded-full flex items-center justify-center">
-                <Plane className="w-8 h-8 text-white" />
-              </div>
-            </div>
-            <CardTitle className="text-2xl font-bold">
-              Registro de Usuario
-            </CardTitle>
-            <CardDescription>
-              Complete sus datos para crear una cuenta
-            </CardDescription>
+            <Plane className="mx-auto mb-4" />
+            <CardTitle>Registro de Usuario</CardTitle>
+            <CardDescription>Complete sus datos</CardDescription>
           </div>
         </CardHeader>
 
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {/* inputs iguales a los que ya tenías */}
-            {/* NO CAMBIÉ NADA DE LA UI */}
-            {/* solo se cambió la lógica */}
-            {/* ... */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
+            <Input placeholder="Nombre" onChange={e => setFormData({ ...formData, nombre: e.target.value })} required />
+            <Input placeholder="Apellido" onChange={e => setFormData({ ...formData, apellido: e.target.value })} required />
+            <Input placeholder="Email" type="email" onChange={e => setFormData({ ...formData, email: e.target.value })} required />
+            <Input placeholder="Legajo" onChange={e => setFormData({ ...formData, legajo: e.target.value.toUpperCase() })} required />
+            <Input type="date" onChange={e => setFormData({ ...formData, fechaIngreso: e.target.value })} required />
 
-            <Button
-              type="submit"
-              className="w-full h-11 bg-[#0066CC]"
-              disabled={loading}
-            >
-              {loading ? 'Registrando...' : 'Crear Cuenta'}
+            <Select onValueChange={v => setFormData({ ...formData, estadoCivil: v as EstadoCivil })}>
+              <SelectTrigger>
+                <SelectValue placeholder="Estado civil" />
+              </SelectTrigger>
+              <SelectContent>
+                {estadoCivilOptions.map(o => (
+                  <SelectItem key={o.value} value={o.value}>{o.label}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Checkbox onCheckedChange={v => setFormData({ ...formData, esJerarquico: v as boolean })}>
+              Jerárquico
+            </Checkbox>
+
+            <Checkbox onCheckedChange={v => setFormData({ ...formData, esJubilado: v as boolean })}>
+              Jubilado
+            </Checkbox>
+
+            <Input type="password" placeholder="Contraseña" onChange={e => setFormData({ ...formData, password: e.target.value })} required />
+            <Input type="password" placeholder="Confirmar contraseña" onChange={e => setFormData({ ...formData, confirmPassword: e.target.value })} required />
+
+            {error && <Alert variant="destructive"><AlertDescription>{error}</AlertDescription></Alert>}
+
+            <Button type="submit" disabled={loading} className="w-full">
+              {loading ? 'Registrando...' : 'Crear cuenta'}
             </Button>
           </form>
         </CardContent>
       </Card>
-    </div>
-  );
-}
-
     </div>
   );
 }
