@@ -82,19 +82,18 @@ export default function Register() {
 
       // 2️⃣ Crear perfil del usuario
       const { error: profileError } = await supabase
-        .from('profiles')
-        .insert({
-          id: authData.user.id,
-          legajo: formData.legajo,
-          nombre: formData.nombre,
-          apellido: formData.apellido,
-          email: formData.email,
-          fecha_ingreso: formData.fechaIngreso,
-          estado_civil: formData.estadoCivil,
-          es_jerarquico: formData.esJerarquico,
-          es_jubilado: formData.esJubilado,
-          en_licencia: false,
-        })
+  .from('profiles')
+  .insert({
+    id: authData.user.id,
+    legajo: formData.legajo,
+    nombre: formData.nombre,
+    apellido: formData.apellido,
+    fecha_ingreso: formData.fechaIngreso,
+    estado_civil: formData.estadoCivil,
+    es_jerarquico: formData.esJerarquico,
+    es_jubilado: formData.esJubilado,
+    en_licencia: false,
+  })
 
       if (profileError) {
         throw new Error('Error al guardar el perfil')
