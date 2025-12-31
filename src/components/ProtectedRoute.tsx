@@ -1,7 +1,11 @@
 import { Navigate } from 'react-router-dom'
-import { useAuth } from '@/context/AuthContext'
+import { useAuth } from '@/contexts/AuthContext'
 
-export function ProtectedRoute({ children }: { children: JSX.Element }) {
+export default function ProtectedRoute({
+  children,
+}: {
+  children: React.ReactNode
+}) {
   const { user, profile, loading } = useAuth()
 
   if (loading) {
@@ -12,15 +16,16 @@ export function ProtectedRoute({ children }: { children: JSX.Element }) {
     )
   }
 
-  // No logueado
+  // ❌ No logueado
   if (!user) {
     return <Navigate to="/login" replace />
   }
 
-  // Logueado pero sin perfil
+  // ❌ Logueado pero sin perfil
   if (!profile) {
     return <Navigate to="/register" replace />
   }
 
-  return children
+  // ✅ Todo OK
+  return <>{children}</>
 }
