@@ -8,12 +8,9 @@ export default function ProtectedRoute({
 }) {
   const { user, profile, loading } = useAuth()
 
+  // ⛔ MUY IMPORTANTE: no renderizar nada hasta terminar loading
   if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        Cargando...
-      </div>
-    )
+    return null
   }
 
   // ❌ No logueado
