@@ -1,22 +1,32 @@
-import { useAuth } from '@/contexts/AuthContext';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
-import { Users, Search, BookOpen, Calendar, AlertCircle, CheckCircle } from 'lucide-react';
-import { PasajesRulesService } from '@/services/pasajesRules';
-import { Alert, AlertDescription } from '@/components/ui/alert';
+import { useAuth } from '@/contexts/AuthContext'
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { useNavigate } from 'react-router-dom'
+import {
+  Users,
+  Search,
+  BookOpen,
+  Calendar,
+  AlertCircle,
+  CheckCircle,
+} from 'lucide-react'
+import { PasajesRulesService } from '@/services/pasajesRules'
+import { Alert, AlertDescription } from '@/components/ui/alert'
 
 export default function Dashboard() {
-  const { usuario } = useAuth();
-  const navigate = useNavigate();
+  const { profile, loading } = useAuth()
+  const navigate = useNavigate()
 
-  if (!usuario) return null;
+  // Seguridad extra (ProtectedRoute ya filtra, esto evita flashes)
+  if (loading || !profile) return null
 
-  const antiguedad = PasajesRulesService.calcularAntiguedad(usuario.fechaIngreso);
-  const antiguedadAnios = Math.floor(antiguedad / 12);
-  const antiguedadMeses = antiguedad % 12;
+  const antiguedad = PasajesRulesService.calcularAntiguedad(
+    profile.fecha_ingreso
+  )
+  const antiguedadAnios = Math.floor(antiguedad / 12)
+  const antiguedadMeses = antiguedad % 12
 
-  const vedaInfo = PasajesRulesService.estaEnPeriodoVeda();
+  const vedaInfo = PasajesRulesService.estaEnPeriodoVeda()
 
   const menuItems = [
     {
@@ -40,45 +50,45 @@ export default function Dashboard() {
       path: '/normativa',
       color: 'bg-purple-500',
     },
-  ];
+  ]
 
   return (
     <div className="space-y-6">
+      {/* Header */}
       <div>
         <h1 className="text-3xl font-bold text-[#1A1A1A]">
-          Bienvenido, {usuario.nombre} {usuario.apellido}
+          Bienvenido, {profile.nombre} {profile.apellido}
         </h1>
         <p className="text-gray-600 mt-2">
-          Legajo: {usuario.legajo} | Antigüedad: {antiguedadAnios} años {antiguedadMeses} meses
+          Legajo: {profile.legajo} | Antigüedad: {antiguedadAnios} años{' '}
+          {antiguedadMeses} meses
         </p>
       </div>
 
+      {/* Veda */}
       {vedaInfo.enVeda && vedaInfo.periodo && (
         <Alert className="border-orange-200 bg-orange-50">
           <AlertCircle className="h-4 w-4 text-orange-600" />
           <AlertDescription className="text-orange-800">
             <strong>Período de Veda Activo:</strong> {vedaInfo.periodo.nombre}
             <br />
-            Los pasajes con plaza confirmada se otorgan sujetos a espacio durante este período.
+            Los pasajes con plaza confirmada se otorgan sujetos a espacio durante
+            este período.
           </AlertDescription>
         </Alert>
       )}
 
-      {usuario.enLicencia && (
+      {/* Licencia */}
+      {profile.en_licencia && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
           <AlertDescription>
-            <strong>Atención:</strong> Está en situación de licencia ({usuario.tipoLicencia}).
-            {(usuario.tipoLicencia === 'medica' || usuario.tipoLicencia === 'accidente') && (
-              <> No puede hacer uso del beneficio de pasajes.</>
-            )}
-            {usuario.tipoLicencia === 'embarazo' && (
-              <> Requiere certificado médico para viajar.</>
-            )}
+            <strong>Atención:</strong> Está en situación de licencia.
           </AlertDescription>
         </Alert>
       )}
 
+      {/* Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <Card className="border-l-4 border-l-[#00A650]">
           <CardHeader>
@@ -90,16 +100,24 @@ export default function Dashboard() {
           <CardContent className="space-y-3">
             <div className="flex justify-between">
               <span className="text-gray-600">Antigüedad:</span>
-              <span className="font-semibold">{antiguedadAnios} años {antiguedadMeses} meses</span>
+              <span className="font-semibold">
+                {antiguedadAnios} años {antiguedadMeses} meses
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Estado Civil:</span>
-              <span className="font-semibold capitalize">{usuario.estadoCivil.replace('_', ' ')}</span>
+              <span className="font-semibold capitalize">
+                {profile.estado_civil.replace('_', ' ')}
+              </span>
             </div>
             <div className="flex justify-between">
               <span className="text-gray-600">Tipo de Personal:</span>
               <span className="font-semibold">
-                {usuario.esJerarquico ? 'Jerárquico' : usuario.esJubilado ? 'Jubilado' : 'Activo'}
+                {profile.es_jerarquico
+                  ? 'Jerárquico'
+                  : profile.es_jubilado
+                  ? 'Jubilado'
+                  : 'Activo'}
               </span>
             </div>
             <div className="flex justify-between">
@@ -127,33 +145,49 @@ export default function Dashboard() {
           <CardContent className="space-y-3">
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Cabotaje:</span>
-              <span className={`font-semibold ${antiguedad >= 12 ? 'text-[#00A650]' : 'text-gray-400'}`}>
+              <span
+                className={`font-semibold ${
+                  antiguedad >= 12 ? 'text-[#00A650]' : 'text-gray-400'
+                }`}
+              >
                 {antiguedad >= 12 ? '✓ Habilitado' : '✗ Requiere 1 año'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Regional:</span>
-              <span className={`font-semibold ${antiguedad >= 24 ? 'text-[#00A650]' : 'text-gray-400'}`}>
+              <span
+                className={`font-semibold ${
+                  antiguedad >= 24 ? 'text-[#00A650]' : 'text-gray-400'
+                }`}
+              >
                 {antiguedad >= 24 ? '✓ Habilitado' : '✗ Requiere 2 años'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-gray-600">Internacional:</span>
-              <span className={`font-semibold ${antiguedad >= 36 ? 'text-[#00A650]' : 'text-gray-400'}`}>
+              <span
+                className={`font-semibold ${
+                  antiguedad >= 36 ? 'text-[#00A650]' : 'text-gray-400'
+                }`}
+              >
                 {antiguedad >= 36 ? '✓ Habilitado' : '✗ Requiere 3 años'}
               </span>
             </div>
             <div className="pt-2 border-t">
               <p className="text-sm text-gray-600">
-                Los destinos se habilitan según antigüedad para pasajes vacacionales
+                Los destinos se habilitan según antigüedad para pasajes
+                vacacionales
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
 
+      {/* Accesos rápidos */}
       <div>
-        <h2 className="text-xl font-semibold text-[#1A1A1A] mb-4">Accesos Rápidos</h2>
+        <h2 className="text-xl font-semibold text-[#1A1A1A] mb-4">
+          Accesos Rápidos
+        </h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {menuItems.map((item) => (
             <Card
@@ -162,7 +196,9 @@ export default function Dashboard() {
               onClick={() => navigate(item.path)}
             >
               <CardHeader>
-                <div className={`w-12 h-12 ${item.color} rounded-lg flex items-center justify-center mb-3`}>
+                <div
+                  className={`w-12 h-12 ${item.color} rounded-lg flex items-center justify-center mb-3`}
+                >
                   <item.icon className="w-6 h-6 text-white" />
                 </div>
                 <CardTitle className="text-lg">{item.title}</CardTitle>
@@ -178,18 +214,31 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {/* Recordatorios */}
       <Card className="bg-[#F5F7FA]">
         <CardHeader>
           <CardTitle className="text-lg">Recordatorios Importantes</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2 text-sm">
-          <p>• Debe presentar documentación que avale el parentesco de cada beneficiario</p>
-          <p>• Los pasajes vacacionales deben iniciar y finalizar en su base habitual</p>
+          <p>
+            • Debe presentar documentación que avale el parentesco de cada
+            beneficiario
+          </p>
+          <p>
+            • Los pasajes vacacionales deben iniciar y finalizar en su base
+            habitual
+          </p>
           <p>• Máximo 4 tramos por ticket (incluido el regreso)</p>
-          <p>• Los pasajes No Name caducan las franquicias sin cargo del grupo básico</p>
-          <p>• Después del 5° viaje internacional o 12° cabotaje al mismo destino requiere autorización</p>
+          <p>
+            • Los pasajes No Name caducan las franquicias sin cargo del grupo
+            básico
+          </p>
+          <p>
+            • Después del 5° viaje internacional o 12° cabotaje al mismo destino
+            requiere autorización
+          </p>
         </CardContent>
       </Card>
     </div>
-  );
+  )
 }
