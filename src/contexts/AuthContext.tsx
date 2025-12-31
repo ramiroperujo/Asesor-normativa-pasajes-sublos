@@ -1,91 +1,98 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { Usuario } from '@/types';
+import { createContext, useContext, useEffect, useState } from 'react'
+import { supabase } from '@/lib/supabase'
+import type { User } from '@supabase/supabase-js'
 
-interface AuthContextType {
-  usuario: Usuario | null;
-  login: (legajo: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  isAuthenticated: boolean;
+type Profile = {
+  id: string
+  legajo: string
+  nombre: string
+  apellido: string
+  fecha_ingreso: string
+  estado_civil: string
+  es_jerarquico: boolean
+  es_jubilado: boolean
+  en_licencia: boolean
 }
 
-const AuthContext = createContext<AuthContextType | undefined>(undefined);
+type AuthContextType = {
+  user: User | null
+  profile: Profile | null
+  loading: boolean
+  signOut: () => Promise<void>
+}
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [usuario, setUsuario] = useState<Usuario | null>(null);
+const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+  const [user, setUser] = useState<User | null>(null)
+  const [profile, setProfile] = useState<Profile | null>(null)
+  const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // Verificar si hay un usuario guardado en localStorage
-    const usuarioGuardado = localStorage.getItem('usuario');
-    if (usuarioGuardado) {
-      setUsuario(JSON.parse(usuarioGuardado));
-    }
-  }, []);
+    const init = async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession()
 
-  const login = async (legajo: string, password: string): Promise<boolean> => {
-    try {
-      // Buscar credenciales en localStorage
-      const credencialesGuardadas = localStorage.getItem(`user_${legajo}`);
-      
-      if (credencialesGuardadas) {
-        const { password: storedPassword, usuario: storedUsuario } = JSON.parse(credencialesGuardadas);
-        
-        if (password === storedPassword) {
-          setUsuario(storedUsuario);
-          localStorage.setItem('usuario', JSON.stringify(storedUsuario));
-          return true;
+      if (session?.user) {
+        setUser(session.user)
+        await loadProfile(session.user.id)
+      }
+
+      setLoading(false)
+    }
+
+    init()
+
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (_event, session) => {
+        if (session?.user) {
+          setUser(session.user)
+          await loadProfile(session.user.id)
+        } else {
+          setUser(null)
+          setProfile(null)
         }
       }
-      
-      // Si no hay credenciales guardadas, permitir login de prueba
-      // (para demostración, en producción esto no existiría)
-      if (legajo && password) {
-        const usuarioDemo: Usuario = {
-          id: Date.now().toString(),
-          legajo,
-          nombre: 'Usuario',
-          apellido: 'Demo',
-          email: `${legajo.toLowerCase()}@aerolineas.com.ar`,
-          fechaIngreso: '2020-03-15',
-          estadoCivil: 'soltero',
-          esJerarquico: false,
-          esJubilado: false,
-          enLicencia: false,
-        };
-        setUsuario(usuarioDemo);
-        localStorage.setItem('usuario', JSON.stringify(usuarioDemo));
-        return true;
-      }
-      
-      return false;
-    } catch (error) {
-      console.error('Error en login:', error);
-      return false;
-    }
-  };
+    )
 
-  const logout = () => {
-    setUsuario(null);
-    localStorage.removeItem('usuario');
-  };
+    return () => {
+      listener.subscription.unsubscribe()
+    }
+  }, [])
+
+  const loadProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (!error) {
+      setProfile(data)
+    } else {
+      setProfile(null)
+    }
+  }
+
+  const signOut = async () => {
+    await supabase.auth.signOut()
+    setUser(null)
+    setProfile(null)
+  }
 
   return (
-    <AuthContext.Provider
-      value={{
-        usuario,
-        login,
-        logout,
-        isAuthenticated: !!usuario,
-      }}
-    >
+    <AuthContext.Provider value={{ user, profile, loading, signOut }}>
       {children}
     </AuthContext.Provider>
-  );
+  )
 }
 
 export function useAuth() {
-  const context = useContext(AuthContext);
-  if (context === undefined) {
-    throw new Error('useAuth must be used within an AuthProvider');
+  const context = useContext(AuthContext)
+  if (!context) {
+    throw new Error('useAuth debe usarse dentro de AuthProvider')
   }
-  return context;
+  return context
 }
+
