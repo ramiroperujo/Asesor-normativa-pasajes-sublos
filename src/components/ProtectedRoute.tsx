@@ -1,17 +1,26 @@
-import { Navigate } from 'react-router-dom';
-import { useAuth } from '@/contexts/AuthContext';
-import { ReactNode } from 'react';
+import { Navigate } from 'react-router-dom'
+import { useAuth } from '@/context/AuthContext'
 
-interface ProtectedRouteProps {
-  children: ReactNode;
-}
+export function ProtectedRoute({ children }: { children: JSX.Element }) {
+  const { user, profile, loading } = useAuth()
 
-export default function ProtectedRoute({ children }: ProtectedRouteProps) {
-  const { isAuthenticated } = useAuth();
-
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        Cargando...
+      </div>
+    )
   }
 
-  return <>{children}</>;
+  // No logueado
+  if (!user) {
+    return <Navigate to="/login" replace />
+  }
+
+  // Logueado pero sin perfil
+  if (!profile) {
+    return <Navigate to="/register" replace />
+  }
+
+  return children
 }
