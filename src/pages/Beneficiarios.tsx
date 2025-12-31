@@ -1,24 +1,26 @@
 import { useEffect, useState } from 'react'
 import { supabase } from '@/lib/supabase'
 import { useAuth } from '@/contexts/AuthContext'
-import { PasajesRulesService } from '@/services/PasajesRulesService'
+import { PasajesRulesService } from '@/services/pasajesRules'
 
+import { Button } from '@/components/ui/button'
 import {
-  Button,
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  Input,
-  Label,
+} from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import {
   Select,
   SelectContent,
   SelectItem,
   SelectTrigger,
   SelectValue,
-  Card,
-  CardContent,
-} from '@/components/ui'
+} from '@/components/ui/select'
+import { Card, CardContent } from '@/components/ui/card'
+
 
 interface Beneficiario {
   id: string
