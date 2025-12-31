@@ -28,6 +28,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null)
   const [loading, setLoading] = useState(true)
 
+  const loadProfile = async (userId: string) => {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('id', userId)
+      .single()
+
+    if (!error) {
+      setProfile(data)
+  } else {
+    setProfile(null)
+  }
+}
+  
   useEffect(() => {
     const init = async () => {
       const {
@@ -61,19 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   }, [])
 
-  const loadProfile = async (userId: string) => {
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('id', userId)
-      .single()
-
-    if (!error) {
-      setProfile(data)
-    } else {
-      setProfile(null)
-    }
-  }
+  
 
   const signOut = async () => {
     await supabase.auth.signOut()
